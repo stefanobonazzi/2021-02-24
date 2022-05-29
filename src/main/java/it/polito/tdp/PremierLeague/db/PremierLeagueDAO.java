@@ -5,7 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import it.polito.tdp.PremierLeague.model.Action;
 import it.polito.tdp.PremierLeague.model.Match;
 import it.polito.tdp.PremierLeague.model.Player;
@@ -13,9 +16,9 @@ import it.polito.tdp.PremierLeague.model.Team;
 
 public class PremierLeagueDAO {
 	
-	public List<Player> listAllPlayers(){
+	public Map<Integer, Player> listAllPlayers(){
 		String sql = "SELECT * FROM Players";
-		List<Player> result = new ArrayList<Player>();
+		Map<Integer, Player> result = new HashMap<>();
 		Connection conn = DBConnect.getConnection();
 
 		try {
@@ -24,7 +27,31 @@ public class PremierLeagueDAO {
 			while (res.next()) {
 
 				Player player = new Player(res.getInt("PlayerID"), res.getString("Name"));
-				result.add(player);
+				result.put(player.getPlayerID(), player);
+			}
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public Map<Integer, Player> listPlayers(Match match){
+		String sql = "SELECT `PlayerID` "
+				+ "FROM `Actions` "
+				+ "WHERE `MatchID` = ?";
+		Map<Integer, Player> players = this.listAllPlayers();
+		Map<Integer, Player> result = new HashMap<Integer, Player>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, match.getMatchID());
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+				result.put(players.get(res.getInt("PlayerID")).getPlayerID(), players.get(res.getInt("PlayerID")));
 			}
 			conn.close();
 			return result;
@@ -64,6 +91,34 @@ public class PremierLeagueDAO {
 
 		try {
 			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+				
+				Action action = new Action(res.getInt("PlayerID"),res.getInt("MatchID"),res.getInt("TeamID"),res.getInt("Starts"),res.getInt("Goals"),
+						res.getInt("TimePlayed"),res.getInt("RedCards"),res.getInt("YellowCards"),res.getInt("TotalSuccessfulPassesAll"),res.getInt("totalUnsuccessfulPassesAll"),
+						res.getInt("Assists"),res.getInt("TotalFoulsConceded"),res.getInt("Offsides"));
+				
+				result.add(action);
+			}
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public List<Action> listActions(Match match){
+		String sql = "SELECT * "
+				+ "FROM `Actions` "
+				+ "WHERE `MatchID` = ?";
+		List<Action> result = new ArrayList<Action>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, match.getMatchID());
 			ResultSet res = st.executeQuery();
 			while (res.next()) {
 				
